@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    ports:
+      - "${NGINX_PORT}:80"
+    depends_on:
+      frontend:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    networks:
+      - portfolio-network
+
+  frontend:
+    build:
+      context: ./portfolio-app
+      dockerfile: Dockerfile
+    expose:
+      - "${ANGULAR_PORT}"
+    volumes:
+      - ./portfolio-app:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=${NODE_ENV}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${ANGULAR_PORT}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - portfolio-network
+
+  backend:
+    build:
+      context: ./portfolio-backend
+      dockerfile: Dockerfile
+    expose:
+      - "${BACKEND_PORT}"
+    volumes:
+      - ./portfolio-backend:/app
+    environment:
+      - MAILGUN_API_KEY=${MAILGUN_API_KEY}
+      - MAILGUN_DOMAIN=${MAILGUN_DOMAIN}
+      - ADMIN_EMAIL=${ADMIN_EMAIL}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${BACKEND_PORT}/docs"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+    networks:
+      - portfolio-network
+
+networks:
+  portfolio-network:
+    driver: bridge 
