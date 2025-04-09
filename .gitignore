@@ -2,6 +2,7 @@
 # Build output
 /dist
 /node_modules
+/LightRAG
 /.angular/cache
 
 # Logs
@@ -18,12 +19,29 @@ yarn-error.log*
 __pycache__/
 *.py[cod]
 *$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
 
 # Virtual environment
 venv/
-.venv/
-env/
 ENV/
+env/
 
 # Installer logs
 pip-log.txt
@@ -81,3 +99,25 @@ Thumbs.db
 *.bak
 *.patch
 *~
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Model files
+*.pth
+*.pt
+*.ckpt
+*.h5
+*.hdf5
+*.pkl
+*.bin
+*.onnx
+
+# Logs
+logs/
+*.log
+
+# Local development
+.env.development.local
+.env.test.local
+.env.production.local

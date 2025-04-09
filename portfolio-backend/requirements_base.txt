@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+python-multipart
+pydantic
+python-dotenv
+submitit
+scikit-image==0.19.2
+scikit-learn==1.1.1
+shapely==1.8.2
+pyyaml==6.0
+colored
+gdown==4.5.4
+nest-asyncio==1.5.6

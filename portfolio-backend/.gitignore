@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environment
+venv/
+ENV/
+env/
+
+# Model files
+*.pth
+*.pt
+*.ckpt
+*.h5
+*.hdf5
+*.pkl
+*.bin
+*.onnx
+
+# Logs
+logs/
+*.log
+
+# Local development
+.env
+.env.local
+
+# OS specific
+.DS_Store
+Thumbs.db 
