@@ -1,3 +1,6 @@
 [submodule "portfolio-app"]
 	path = portfolio-app
 	url = git@github.com:kmajeshkrishnan/portfolio-app.git
+[submodule "portfolio-backend/CutLER"]
+	path = portfolio-backend/CutLER
+	url = https://github.com/facebookresearch/CutLER.git
