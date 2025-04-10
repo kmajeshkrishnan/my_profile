@@ -23,13 +23,11 @@ RUN pip install --no-cache-dir -r requirements_heavy.txt
 RUN python -m pip install 'git+https://github.com/facebookresearch/detectron2.git'
 
 # Clone and install LightRAG
-RUN git clone https://github.com/HKUDS/LightRAG.git /tmp/LightRAG \
-    && mv /tmp/LightRAG /app/LightRAG \
-    && rm -rf /tmp/LightRAG/.git  
+COPY LightRAG /app/LightRAG
 WORKDIR /app/LightRAG
 RUN pip install -e .
-WORKDIR /app
 
+WORKDIR /app
 
 # Copy and install base (fast-changing) requirements
 COPY requirements_base.txt .
@@ -39,6 +37,7 @@ RUN pip install --no-cache-dir pillow==9.5.0
 
 # Copy application code
 COPY . .
+
 
 # Expose port
 EXPOSE 8000
