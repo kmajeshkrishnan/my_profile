@@ -1,0 +1,72 @@
+services:
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    ports:
+      - "${NGINX_PORT}:80"
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - portfolio-network
+    volumes:
+      - ./nginx/nginx.dev.conf:/etc/nginx/nginx.conf
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./portfolio-app
+      dockerfile: Dockerfile
+    expose:
+      - "4200"
+    ports:
+      - "4200:4200"
+    volumes:
+      - ./portfolio-app:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+    command: npm start -- --host 0.0.0.0
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:4200"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    networks:
+      - portfolio-network
+
+  backend:
+    build:
+      context: ./portfolio-backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    expose:
+      - "8000"
+    volumes:
+      - ./portfolio-backend:/app
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ENVIRONMENT=development
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:8000/docs"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - portfolio-network
+    restart: always
+
+networks:
+  portfolio-network:
+    driver: bridge 
