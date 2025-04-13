@@ -13,6 +13,7 @@ services:
       - portfolio-network
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/ssl.conf:/etc/nginx/conf.d/ssl.conf
       - ./certbot/www:/var/www/certbot
       - ./certbot/conf:/etc/letsencrypt
     healthcheck:
@@ -31,7 +32,7 @@ services:
     entrypoint: ""
     command: >
       sh -c "sleep 30 && 
-      certbot certonly --webroot -w /var/www/certbot -d ajeshkrishnan.com -d www.ajeshkrishnan.com --email kmajeshkrishnan@gmail.com --agree-tos --non-interactive --force-renewal --dry-run &&
+      certbot certonly --webroot -w /var/www/certbot -d ajeshkrishnan.com -d www.ajeshkrishnan.com --email kmajeshkrishnan@gmail.com --agree-tos --non-interactive --force-renewal &&
       trap exit TERM; while :; do certbot renew; sleep 12h & wait; done"
     depends_on:
       - nginx
