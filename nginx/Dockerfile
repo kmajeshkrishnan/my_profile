@@ -1,16 +1,11 @@
-FROM nginx:alpine
 
-# Install curl for healthcheck
-RUN apk add --no-cache curl
+FROM nginx:stable-alpine
 
-# Copy custom nginx config
-COPY nginx.conf /etc/nginx/nginx.conf
+# Install required tools
+RUN apk add --no-cache openssl curl
 
-# Create log directory
-RUN mkdir -p /var/log/nginx
+# Make the script executable
+COPY start-nginx.sh /start-nginx.sh
+RUN chmod +x /start-nginx.sh
 
-# Expose port
-EXPOSE 80
-
-# Start Nginx
-CMD ["nginx", "-g", "daemon off;"] 
+EXPOSE 80 443
