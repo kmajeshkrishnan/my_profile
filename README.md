@@ -1,10 +1,11 @@
-# ML Portfolio Backend
+# ML Portfolio Backend - Production Ready
 
-A ML model serving application with MLFlow integration, monitoring, and async processing capabilities.
+A production-ready ML model serving application with MLFlow integration, monitoring, async processing, and RAG (Retrieval-Augmented Generation) capabilities.
 
 ## Features
 
 - **MLFlow Integration**: Model tracking, versioning, and experiment management
+- **RAG System**: Resume-based question answering using LightRAG
 - **Async Processing**: Celery-based background task processing
 - **Monitoring**: Prometheus metrics and Grafana dashboards
 - **Production Ready**: Structured logging, health checks, and security best practices
@@ -30,7 +31,7 @@ A ML model serving application with MLFlow integration, monitoring, and async pr
                                                        │
                                                        ▼
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Prometheus    │    │   Grafana       │    │   CutLER Model  │
+│   Prometheus    │    │   Grafana       │    │   RAG + CutLER  │
 │   (Metrics)     │    │   (Dashboards)  │    │   (Inference)   │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
@@ -41,8 +42,8 @@ A ML model serving application with MLFlow integration, monitoring, and async pr
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/kmajeshkrishnan/my_profile.git
-   cd my_profile
+   git clone <repository-url>
+   cd ml-portfolio
    ```
 
 2. **Start development environment**:
@@ -83,6 +84,12 @@ A ML model serving application with MLFlow integration, monitoring, and async pr
 - `GET /metrics` - Prometheus metrics
 - `GET /model/info` - Model information
 
+### RAG (Resume Question Answering)
+
+- `GET /rag/info` - RAG service information
+- `GET /rag/health` - RAG service health check
+- `POST /rag/query` - Query resume with questions
+
 ### Image Processing
 
 - `POST /process-image` - Synchronous image processing
@@ -92,6 +99,62 @@ A ML model serving application with MLFlow integration, monitoring, and async pr
 ### MLFlow Integration
 
 - `GET /mlflow/runs` - Get recent MLFlow runs
+
+## RAG System
+
+The application includes a powerful RAG (Retrieval-Augmented Generation) system that allows users to ask questions about your resume and get intelligent, context-aware answers.
+
+### Features
+
+- **Resume-Based Q&A**: Ask questions about your experience, skills, and background
+- **Intelligent Responses**: Uses LightRAG for context-aware answers
+- **Production Monitoring**: Full integration with MLFlow and Prometheus
+- **Health Checks**: Comprehensive health monitoring
+- **Async Processing**: Non-blocking query processing
+
+### Example Usage
+
+```bash
+# Ask about your experience
+curl -X POST "http://localhost:8000/rag/query" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "What is your experience with machine learning?"}'
+
+# Ask about your skills
+curl -X POST "http://localhost:8000/rag/query" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "What programming languages do you know?"}'
+
+# Get detailed response with metadata
+curl -X POST "http://localhost:8000/rag/query" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "Tell me about your projects", "include_metadata": true}'
+```
+
+### Sample Questions
+
+- "What is your educational background?"
+- "What are your technical skills?"
+- "Tell me about your work experience"
+- "What projects have you worked on?"
+- "What are your areas of expertise?"
+- "What technologies do you use?"
+
+### Response Format
+
+```json
+{
+  "success": true,
+  "response": "I have extensive experience in machine learning...",
+  "processing_time": 1.234,
+  "query": "What is your experience with machine learning?",
+  "metadata": {
+    "total_queries": 15,
+    "successful_queries": 14,
+    "success_rate": 0.933
+  }
+}
+```
 
 ## MLFlow Integration
 
@@ -118,6 +181,7 @@ The application exposes Prometheus metrics at `/metrics`:
 
 - **HTTP Requests**: Total requests, duration, status codes
 - **Model Predictions**: Prediction count, duration, success rate
+- **RAG Queries**: Query count, response time, success rate
 - **File Uploads**: Upload count, file sizes, success rate
 - **System Metrics**: Memory usage, active connections
 
@@ -126,6 +190,7 @@ The application exposes Prometheus metrics at `/metrics`:
 Access Grafana at `http://localhost:3000` (admin/admin) to view:
 - Request rate and latency
 - Model prediction performance
+- RAG query performance
 - System resource usage
 - Error rates and trends
 
@@ -136,6 +201,7 @@ Access Grafana at `http://localhost:3000` (admin/admin) to view:
 The application uses Celery for background processing:
 
 - **Image Processing**: Async image processing for large files
+- **RAG Queries**: Async processing for complex queries
 - **Cleanup**: Automatic cleanup of temporary files
 - **Health Checks**: Periodic health checks of services
 
@@ -167,6 +233,10 @@ REDIS_URL=redis://localhost:6379
 MODEL_PATH=CutLER/cutler/model_zoo/cutler_cascade_final.pth
 CONFIG_PATH=CutLER/cutler/model_zoo/configs/CutLER-ImageNet/cascade_mask_rcnn_R_50_FPN_demo.yaml
 
+# RAG
+RAG_RESUME_PATH=data/ajeshs_resume.txt
+RAG_WORKING_DIR=./rag_data
+
 # File Upload
 MAX_FILE_SIZE=10485760  # 10MB
 
@@ -190,14 +260,14 @@ SENTRY_DSN=your_sentry_dsn  # Optional
 
 The project uses split requirements files for optimized Docker builds:
 
-- **`requirements_heavy.txt`**: Slow-changing ML dependencies (PyTorch, OpenCV, Detectron2)
+- **`requirements_heavy.txt`**: Slow-changing ML dependencies (PyTorch, OpenCV, Detectron2, LightRAG)
 - **`requirements_base.txt`**: Fast-changing application dependencies (FastAPI, Celery, MLFlow)
 
 This structure allows for better Docker layer caching and faster rebuilds during development.
 
 ## Security
 
-### Security Features
+### Production Security Features
 
 - **Non-root user**: Application runs as non-root user
 - **Resource limits**: CPU and memory limits configured
@@ -236,18 +306,21 @@ This structure allows for better Docker layer caching and faster rebuilds during
 1. **MLFlow Connection**: Check MLFlow server is running
 2. **Redis Connection**: Verify Redis is accessible
 3. **Model Loading**: Check model files exist
-4. **File Upload**: Verify file size limits
+4. **RAG Service**: Verify resume file exists and is readable
+5. **File Upload**: Verify file size limits
 
 ### Logs
 
 - **Application logs**: `docker-compose logs backend`
 - **Celery logs**: `docker-compose logs celery-worker`
 - **MLFlow logs**: `docker-compose logs mlflow`
+- **RAG logs**: Check backend logs for RAG service messages
 
 ### Health Checks
 
 - **Application**: `curl http://localhost:8000/health`
 - **MLFlow**: `curl http://localhost:5000/health`
+- **RAG Service**: `curl http://localhost:8000/rag/health`
 - **Redis**: `docker-compose exec redis redis-cli ping`
 
 ## Development
@@ -272,6 +345,13 @@ When adding new dependencies:
 1. **ML/Heavy dependencies**: Add to `requirements_heavy.txt`
 2. **Application dependencies**: Add to `requirements_base.txt`
 3. **Rebuild containers**: `docker-compose build --no-cache`
+
+### Customizing RAG
+
+1. **Update resume**: Replace `data/ajeshs_resume.txt` with your resume
+2. **Modify prompts**: Update query formatting in `rag_service.py`
+3. **Add context**: Include additional documents in the RAG system
+4. **Fine-tune responses**: Adjust response generation parameters
 
 ## License
 

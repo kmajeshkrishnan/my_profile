@@ -11,3 +11,4 @@ sentry-sdk[fastapi]==1.38.0
 gunicorn==21.2.0
 mlflow==2.8.1
 psycopg2-binary==2.9.9
+aiohttp==3.9.1

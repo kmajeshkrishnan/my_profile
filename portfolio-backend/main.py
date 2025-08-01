@@ -9,11 +9,13 @@ from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 
 # Import services
 from services.cutler_service import CutlerService
+from services.rag_service import rag_service
 from services.mlflow_service import mlflow_service
 from services.monitoring_service import monitoring_service
 from services.celery_service import celery_app, process_image_async
 from config import settings
 from logging_config import setup_logging, get_logger
+from models import RagQueryRequest, RagQueryResponse, ServiceInfoResponse, HealthCheckResponse
 
 # Setup logging
 setup_logging()
@@ -23,7 +25,7 @@ logger = get_logger(__name__)
 app = FastAPI(
     title=settings.app_name,
     version=settings.version,
-    description="Production-ready ML model serving API with MLFlow integration",
+    description="Production-ready ML model serving API with MLFlow integration and RAG capabilities",
     docs_url="/docs" if settings.debug else None,
     redoc_url="/redoc" if settings.debug else None
 )
@@ -41,6 +43,19 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # Initialize services
 cutler_service = CutlerService()
+
+# Startup event to initialize RAG service
+@app.on_event("startup")
+async def startup_event():
+    """Initialize services on startup."""
+    try:
+        # Set the resume path to the data folder
+        resume_path = "data/resume.txt"
+        rag_service.resume_path = resume_path
+        await rag_service.initialize()
+        logger.info("RAG service initialized successfully")
+    except Exception as e:
+        logger.error("Failed to initialize RAG service", error=str(e))
 
 # Custom middleware for request timing
 @app.middleware("http")
@@ -71,6 +86,9 @@ async def health_check():
         # Check model info
         model_info = cutler_service.get_model_info()
         
+        # Check RAG service health
+        rag_health = await rag_service.health_check()
+        
         return {
             "status": "healthy",
             "timestamp": time.time(),
@@ -78,9 +96,11 @@ async def health_check():
             "environment": settings.environment,
             "services": {
                 "mlflow": "available",
-                "cutler": "available" if "error" not in model_info else "error"
+                "cutler": "available" if "error" not in model_info else "error",
+                "rag": rag_health["status"]
             },
-            "model_info": model_info
+            "model_info": model_info,
+            "rag_health": rag_health
         }
     except Exception as e:
         logger.error("Health check failed", error=str(e))
@@ -104,6 +124,49 @@ async def metrics():
 async def get_model_info():
     """Get information about the loaded model."""
     return cutler_service.get_model_info()
+
+# RAG service info endpoint
+@app.get("/rag/info", response_model=ServiceInfoResponse)
+async def get_rag_info():
+    """Get information about the RAG service."""
+    return rag_service.get_service_info()
+
+# RAG health check endpoint
+@app.get("/rag/health", response_model=HealthCheckResponse)
+async def rag_health_check():
+    """Health check for RAG service."""
+    return await rag_service.health_check()
+
+# RAG query endpoint
+@app.post("/rag/query", response_model=RagQueryResponse)
+async def rag_query(request: RagQueryRequest):
+    """Query the RAG system with a question about the resume."""
+    try:
+        # Record file upload metrics (for consistency, even though it's not a file upload)
+        monitoring_service.record_file_upload(
+            file_type="text_query",
+            status="success",
+            file_size=len(request.query)
+        )
+        
+        # Query the RAG system
+        result = await rag_service.query(request.query)
+        
+        # Create response
+        response = RagQueryResponse(
+            success=result["success"],
+            response=result.get("response"),
+            error=result.get("error"),
+            processing_time=result["processing_time"],
+            query=result["query"],
+            metadata=result.get("metadata") if request.include_metadata else None
+        )
+        
+        return response
+        
+    except Exception as e:
+        logger.error("RAG query failed", error=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
 
 # MLFlow runs endpoint
 @app.get("/mlflow/runs")
@@ -235,6 +298,9 @@ async def root():
             "health": "/health",
             "metrics": "/metrics",
             "model_info": "/model/info",
+            "rag_info": "/rag/info",
+            "rag_health": "/rag/health",
+            "rag_query": "/rag/query",
             "process_image": "/process-image",
             "process_image_async": "/process-image/async",
             "task_status": "/task/{task_id}",
