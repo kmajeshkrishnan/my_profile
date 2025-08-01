@@ -41,8 +41,8 @@ A ML model serving application with MLFlow integration, monitoring, and async pr
 
 1. **Clone the repository**:
    ```bash
-   git clone <repository-url>
-   cd ml-portfolio
+   git clone https://github.com/kmajeshkrishnan/my_profile.git
+   cd my_profile
    ```
 
 2. **Start development environment**:
