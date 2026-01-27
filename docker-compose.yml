@@ -16,28 +16,8 @@ services:
       - ./nginx/ssl.conf:/etc/nginx/conf.d/ssl.conf
       - ./certbot/www:/var/www/certbot
       - ./certbot/conf:/etc/letsencrypt
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:80/.well-known/acme-challenge/"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
+      - ./nginx/logs:/var/log/nginx  # Add this for security logs
     restart: unless-stopped
-  
-  certbot:
-    image: certbot/certbot
-    volumes:
-      - ./certbot/www:/var/www/certbot
-      - ./certbot/conf:/etc/letsencrypt
-    entrypoint: ""
-    command: >
-      sh -c "sleep 30 && 
-      certbot certonly --webroot -w /var/www/certbot -d ajeshkrishnan.com -d www.ajeshkrishnan.com --email kmajeshkrishnan@gmail.com --agree-tos --non-interactive --force-renewal &&
-      trap exit TERM; while :; do certbot renew; sleep 12h & wait; done"
-    depends_on:
-      - nginx
-    networks:
-      - portfolio-network
 
   frontend:
     build:
@@ -47,17 +27,8 @@ services:
       - "${ANGULAR_PORT}"
     ports:
       - "${ANGULAR_PORT}:${ANGULAR_PORT}"
-    volumes:
-      - ./portfolio-app:/app
-      - /app/node_modules
     environment:
       - NODE_ENV=${NODE_ENV}
-    healthcheck:
-      test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:${ANGULAR_PORT}"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 60s
     networks:
       - portfolio-network
 
@@ -73,12 +44,6 @@ services:
       - ./portfolio-backend:/app
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-    healthcheck:
-      test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:${BACKEND_PORT}/docs"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 60s
     deploy:
       resources:
         limits:
@@ -86,7 +51,7 @@ services:
           memory: 4G
     networks:
       - portfolio-network
-    restart: always
+    restart: unless-stopped
 
 volumes:
   nginx_logs:
